@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr" data-overlay="postgame">
+<head>
+<meta charset="utf-8"><title>Post-game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #root { position: absolute; left: 50%; top: 50%; width: 1500px; margin: -400px 0 0 -750px; transform: scale(.95); }
+  .card { padding: 26px 34px 24px; border-top: 5px solid var(--accent); position: relative; overflow: hidden; }
+  .head { display: grid; grid-template-columns: 1fr 320px 1fr; align-items: center; margin-bottom: 18px; }
+  .ht { --tc: #888; display: flex; align-items: center; gap: 18px; } .ht.red { flex-direction: row-reverse; text-align: right; }
+  .ht .lg { width: 84px; height: 84px; font-size: 60px; flex: none; }
+  .ht .nm { font-size: 44px; font-weight: 700; text-transform: uppercase; line-height: 1; letter-spacing: .03em; }
+  .ht .res { font-size: 22px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .ht.win .res { color: var(--tc); font-weight: 700; }
+  .mid { text-align: center; } .mid .big { font-size: 70px; font-weight: 800; line-height: 1; } .mid .sm { font-size: 20px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+  .row { --tc: #888; display: grid; grid-template-columns: 58px 1fr 92px 54px 64px 78px; gap: 10px; align-items: center; height: 76px; padding: 0 10px 0 6px;
+    background: rgba(255,255,255,.04); border-left: 4px solid var(--tc); border-radius: var(--radius); margin-bottom: 6px; font-size: 22px; }
+  .row .ic { width: 56px; height: 56px; }
+  .row .who b { display: block; font-size: 22px; line-height: 1.05; } .row .who small { color: var(--muted); font-size: 15px; line-height: 1; display: flex; gap: 2px; margin-top: 4px; }
+  .row .who small i { width: 20px; height: 20px; border-radius: 3px; background: rgba(0,0,0,.4) center/cover; display: block; }
+  .row .r { text-align: right; } .row .m { color: var(--muted); }
+  .hd { display: grid; grid-template-columns: 58px 1fr 92px 54px 64px 78px; gap: 10px; padding: 0 10px 0 6px; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .hd span:nth-child(n+3) { text-align: right; }
+  .foot { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 10px; }
+  .tot { display: flex; justify-content: space-between; padding: 10px 16px; background: rgba(255,255,255,.06); border-radius: var(--radius); font-size: 22px; }
+  .tot span { color: var(--muted); font-size: 14px; letter-spacing: .12em; display: block; text-transform: uppercase; }
+  .tot div { text-align: center; }
+  #graph { margin-top: 14px; padding: 8px 14px; background: rgba(255,255,255,.04); border-radius: var(--radius); }
+  #graph h4 { margin: 0; font-size: 14px; letter-spacing: .14em; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+  svg { width: 100%; height: 110px; display: block; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="card" data-origin="960px 540px">
+  <div id="root" class="fade-root">
+    <div class="card panel banner">
+      <div class="head">
+        <div class="ht blue" id="hb"><div class="lg" id="hb-lg"></div><div><div class="nm" id="hb-nm"></div><div class="res" id="hb-res"></div></div></div>
+        <div class="mid"><div class="sm" id="dur"></div><div class="big num" id="score"></div><div class="sm" id="tour"></div></div>
+        <div class="ht red" id="hr"><div class="lg" id="hr-lg"></div><div><div class="nm" id="hr-nm"></div><div class="res" id="hr-res"></div></div></div>
+      </div>
+      <div class="cols"><div id="c-blue"></div><div id="c-red"></div></div>
+      <div class="foot" data-comp="totals"><div class="tot" id="t-blue"></div><div class="tot" id="t-red"></div></div>
+      <div id="graph" data-comp="graph"><h4>Écart d'or</h4><svg id="svg" viewBox="0 0 1400 110" preserveAspectRatio="none"></svg></div>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const hdr = '<div class="hd"><span></span><span>Joueur</span><span>K / D / A</span><span>CS</span><span data-comp="kp">KP</span><span>Or</span></div>';
+  function rowHTML(p, i, team, color) {
+    const name = team.players[i] && team.players[i].trim() ? team.players[i] : p.name;
+    const items = (p.items || []).slice(0, 7).map((it) => `<i style="background-image:url('${Overlay.item(it.id)}')"></i>`).join('');
+    return `<div class="row" style="--tc:${color}"><div class="ic champ-img" style="background-image:url('${Overlay.square(p.champion)}')"></div>
+      <div class="who"><b>${Overlay.esc(name)}</b><small>${items}</small></div>
+      <div class="r num">${p.kills} / ${p.deaths} / ${p.assists}</div><div class="r m num">${p.cs}</div><div class="r m num" data-comp="kp">${p.kp}%</div><div class="r num">${Overlay.fmtGold(p.gold)}</div></div>`;
+  }
+  function totals(t) {
+    const dr = t.dragons.length;
+    const cell = (l, v) => `<div><span>${l}</span>${v}</div>`;
+    return cell('Kills', t.kills) + cell('Or', Overlay.fmtGold(t.gold)) + cell('Tours', t.towers) + cell('Dragons', dr) + cell('Barons', t.barons);
+  }
+  function drawGraph(hist, blue, red) {
+    if (!hist || hist.length < 2) return '';
+    const W = 1400, H = 110, mid = H / 2;
+    const maxT = Math.max(60, hist[hist.length - 1].t);
+    const maxD = Math.max(1500, ...hist.map((h) => Math.abs(h.d))) * 1.1;
+    const X = (t) => (t / maxT) * W, Y = (d) => mid - (d / maxD) * (mid - 4);
+    const pts = hist.map((h) => `${X(h.t).toFixed(1)},${Y(h.d).toFixed(1)}`);
+    const area = `M0,${mid} L${pts.join(' L')} L${X(hist[hist.length - 1].t).toFixed(1)},${mid} Z`;
+    return `<defs><clipPath id="up"><rect x="0" y="0" width="${W}" height="${mid}"/></clipPath><clipPath id="dn"><rect x="0" y="${mid}" width="${W}" height="${mid}"/></clipPath></defs>
+      <path d="${area}" fill="${blue}" fill-opacity=".55" clip-path="url(#up)"/><path d="${area}" fill="${red}" fill-opacity=".55" clip-path="url(#dn)"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="#fff" stroke-width="2"/><line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="rgba(255,255,255,.35)"/>`;
+  }
+  Overlay.onState((s) => {
+    const g = s.lastGame || s.game;
+    const m = s.match;
+    const win = m.lastWinner;
+    for (const side of ['blue', 'red']) {
+      const team = Overlay.team(side);
+      const k = side === 'blue' ? 'hb' : 'hr';
+      $(k).style.setProperty('--tc', team.color);
+      $(k).classList.toggle('win', win === side);
+      Overlay.html($(k + '-lg'), Overlay.logoHTML(team));
+      Overlay.text($(k + '-nm'), team.name);
+      Overlay.text($(k + '-res'), win ? (win === side ? 'Victoire' : 'Défaite') : 'Fin de partie');
+      Overlay.teamBanner($(k), team);
+      Overlay.html($('c-' + side), g ? (side === 'blue' ? hdr : hdr) + g[side].players.map((p, i) => rowHTML(p, i, team, team.color)).join('') : '');
+      Overlay.html($('t-' + side), g ? totals(g[side]) : '');
+    }
+    Overlay.text($('dur'), g ? 'Durée ' + Overlay.fmtTime(g.time) : '');
+    Overlay.text($('score'), `${m.blueWins} - ${m.redWins}`);
+    Overlay.text($('tour'), `${m.round || ''} · BO${m.bestOf}`);
+    Overlay.html($('svg'), g ? drawGraph(g.goldHistory, Overlay.team('blue').color, Overlay.team('red').color) : '');
+  });
+</script>
+</body>
+</html>

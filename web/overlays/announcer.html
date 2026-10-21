@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr" data-overlay="announcer">
+<head>
+<meta charset="utf-8"><title>Annonceur</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #wrap { position: absolute; top: 215px; left: 50%; width: 760px; margin-left: -380px; height: 120px; }
+  .ann { --tc: #888; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); border-top: 4px solid var(--tc); border-bottom: 4px solid var(--tc);
+    opacity: 0; transform: translateY(-24px) scale(.96); transition: opacity .35s, transform .35s; overflow: hidden; }
+  .ann::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, var(--tc), transparent 70%); opacity: .25; }
+  .ann.on { opacity: 1; transform: none; }
+  .ann > * { position: relative; }
+  .ann .t { font-size: 54px; font-weight: 800; letter-spacing: .1em; line-height: 1; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+  .ann .s { font-size: 24px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="banner" data-origin="960px 215px"><div id="wrap"><div class="ann banner" id="ann"><div class="t" id="t"></div><div class="s" id="s" data-comp="sub"></div></div></div></div>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const seen = new Set();
+  let init = false, lastT = -1, queue = [], busy = false;
+  const MULTI = { 2: 'DOUBLE KILL', 3: 'TRIPLE KILL', 4: 'QUADRA KILL', 5: 'PENTAKILL' };
+  const LANE = (l) => (l ? ' · ' + l : '');
+
+  function describe(f) {
+    const team = f.side ? Overlay.team(f.side) : null;
+    const tn = team ? team.name : '';
+    const color = team ? team.color : '#888';
+    const champ = (c) => (c ? Overlay.champName(c) : '');
+    switch (f.kind) {
+      case 'firstblood': return { k: 'firstblood', t: 'Premier sang', s: champ(f.champ) || f.who, color };
+      case 'multikill': return { k: 'multikill', t: MULTI[f.streak] || 'MULTIKILL', s: champ(f.champ) || f.who, color };
+      case 'ace': return { k: 'ace', t: 'Ace', s: tn, color };
+      case 'dragon': return { k: 'dragon', t: f.dragon === 'Elder' ? 'Dragon ancien' : 'Dragon ' + (Overlay.DRAGON_FR[f.dragon] || ''), s: tn, color };
+      case 'baron': return { k: 'baron', t: 'Baron Nashor', s: tn, color };
+      case 'herald': return { k: 'herald', t: 'Héraut de la Faille', s: tn, color };
+      case 'grub': return { k: 'grub', t: 'Larve du Vide', s: tn, color };
+      case 'turret': return { k: 'turret', t: 'Tourelle détruite', s: tn + LANE(f.lane), color };
+      case 'inhib': return { k: 'inhib', t: 'Inhibiteur détruit', s: tn + LANE(f.lane), color };
+      default: return null;
+    }
+  }
+
+  function pump() {
+    if (busy || !queue.length) return;
+    busy = true;
+    const m = queue.shift();
+    const a = $('ann');
+    a.style.setProperty('--tc', m.color);
+    Overlay.text($('t'), m.t);
+    Overlay.text($('s'), m.s);
+    a.classList.add('on');
+    const dur = (Overlay.state().settings.announcer.duration || 4) * 1000;
+    setTimeout(() => { a.classList.remove('on'); setTimeout(() => { busy = false; pump(); }, 450); }, dur);
+  }
+
+  Overlay.onState((s) => {
+    const g = s.game;
+    if (!g) return;
+    if (g.time < lastT - 3) { seen.clear(); queue = []; init = true; }
+    lastT = g.time;
+    if (!init) { g.feed.forEach((f) => seen.add(f.id)); init = true; return; }
+    const kinds = s.settings.announcer.kinds;
+    for (const f of g.feed) {
+      if (seen.has(f.id)) continue;
+      seen.add(f.id);
+      if (!kinds[f.kind]) continue;
+      const d = describe(f);
+      if (d) { queue.push(d); if (queue.length > 4) queue.shift(); }
+    }
+    pump();
+  });
+</script>
+</body>
+</html>

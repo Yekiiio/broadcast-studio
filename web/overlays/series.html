@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr" data-overlay="series">
+<head>
+<meta charset="utf-8"><title>Série</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #root { position: absolute; left: 50%; top: 50%; width: 1240px; margin: -230px 0 0 -620px; transform: scale(.94); }
+  .card { padding: 34px 40px 30px; text-align: center; position: relative; overflow: hidden; border-top: 5px solid var(--accent); }
+  .tour { font-size: 26px; letter-spacing: .24em; text-transform: uppercase; color: var(--accent); }
+  .match { display: grid; grid-template-columns: 1fr 260px 1fr; align-items: center; margin: 26px 0 18px; }
+  .t { --tc: #888; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .t .lg { width: 190px; height: 190px; font-size: 130px; filter: drop-shadow(0 6px 18px rgba(0,0,0,.5)); }
+  .t .nm { font-size: 50px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; line-height: 1; padding-bottom: 8px; border-bottom: 5px solid var(--tc); }
+  .score { font-size: 150px; font-weight: 800; line-height: 1; letter-spacing: .02em; }
+  .score span.dim { opacity: .35; }
+  .meta { font-size: 28px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="blk" data-block="card" data-origin="960px 540px">
+  <div id="root" class="fade-root">
+    <div class="card panel banner">
+      <div class="tour" id="tour" data-comp="tournament"></div>
+      <div class="match">
+        <div class="t" id="tb"><div class="lg" id="tb-lg" data-comp="logos"></div><div class="nm" id="tb-nm"></div></div>
+        <div class="score num"><span id="sb">0</span><span class="dim"> - </span><span id="sr">0</span></div>
+        <div class="t" id="tr"><div class="lg" id="tr-lg" data-comp="logos"></div><div class="nm" id="tr-nm"></div></div>
+      </div>
+      <div class="meta" id="meta" data-comp="meta"></div>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  Overlay.onState((s) => {
+    const m = s.match;
+    for (const [side, k] of [['blue', 'tb'], ['red', 'tr']]) {
+      const t = Overlay.team(side);
+      $(k).style.setProperty('--tc', t.color);
+      Overlay.html($(k + '-lg'), Overlay.logoHTML(t));
+      Overlay.text($(k + '-nm'), t.name);
+    }
+    Overlay.text($('sb'), m.blueWins);
+    Overlay.text($('sr'), m.redWins);
+    Overlay.text($('tour'), m.tournament || 'Match');
+    const done = m.blueWins >= Math.ceil(m.bestOf / 2) || m.redWins >= Math.ceil(m.bestOf / 2);
+    Overlay.text($('meta'), done ? `Victoire ${m.blueWins > m.redWins ? Overlay.team('blue').name : Overlay.team('red').name}` : `${m.round ? m.round + ' · ' : ''}Best of ${m.bestOf} · Manche ${m.game}`);
+  });
+</script>
+</body>
+</html>

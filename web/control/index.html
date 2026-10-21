@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broadcast Studio</title>
+<link rel="stylesheet" href="control.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><span class="dot"></span>Broadcast Studio</div>
+  <nav id="nav">
+    <button data-tab="dash" class="on">Tableau de bord</button>
+    <button data-tab="teams">Équipes</button>
+    <button data-tab="draft">Champ select</button>
+    <button data-tab="style">Style</button>
+    <button data-tab="theme">Thèmes</button>
+    <button data-tab="settings">Réglages</button>
+  </nav>
+  <div class="foot"><div id="conn" class="pill off">Connexion…</div><small>100 % gratuit</small></div>
+</aside>
+<main>
+  <section id="tab-dash" class="tab on"></section>
+  <section id="tab-teams" class="tab"></section>
+  <section id="tab-draft" class="tab"></section>
+  <section id="tab-style" class="tab"></section>
+  <section id="tab-theme" class="tab"></section>
+  <section id="tab-settings" class="tab"></section>
+</main>
+<div id="toast"></div>
+<script src="control.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+:root {
+  --blue: #3b82f6; --red: #ef4444;
+  --bg: #0b1220; --panel-rgb: 17, 27, 46; --opacity: .92;
+  --text: #f1f5f9; --muted: #8b9bb4; --accent: #e8b84b;
+  --font: 'Rajdhani'; --radius: 6px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent;
+  font-family: var(--font), 'Segoe UI', system-ui, sans-serif; color: var(--text); font-weight: 600; }
+.panel { background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); }
+.fade-root { transition: opacity .55s ease, transform .55s ease; opacity: 0; }
+body.show .fade-root { opacity: 1; transform: none !important; }
+/* Bloc déplaçable : conteneur plein écran, transparent aux clics, qui porte la position/échelle choisies dans l'éditeur de style. */
+.blk { position: absolute; inset: 0; pointer-events: none; }
+/* Bannière personnalisée (image de fond) : globale à l'overlay ou propre à l'équipe. */
+.banner { background-image: var(--banner-img, none) !important; background-size: cover !important; background-position: center !important; }
+.logo { width: 100%; height: 100%; object-fit: contain; display: block; }
+.logo-ph { display: grid; place-items: center; width: 100%; height: 100%; font-weight: 800; font-size: .5em;
+  color: #fff; border-radius: calc(var(--radius) * .7); letter-spacing: .03em; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.num { font-variant-numeric: tabular-nums; }
+.champ-img { background: var(--bg) center/cover no-repeat; border-radius: calc(var(--radius) * .6); }

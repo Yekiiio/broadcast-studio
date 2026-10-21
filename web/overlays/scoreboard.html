@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr" data-overlay="scoreboard">
+<head>
+<meta charset="utf-8"><title>Scoreboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #root { position: absolute; top: 18px; left: 50%; margin-left: -680px; width: 1360px; transform: translateY(-40px); }
+  .bar { display: grid; grid-template-columns: 1fr 190px 1fr; height: 78px; }
+  .team { --tc: #888; display: flex; align-items: center; gap: 14px; padding: 0 16px; position: relative; overflow: hidden;
+    background: rgba(var(--panel-rgb), var(--opacity)); border-bottom: 4px solid var(--tc); }
+  .team::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--tc), transparent 55%); opacity: .22; }
+  .team.red { flex-direction: row-reverse; }
+  .team.red::before { background: linear-gradient(270deg, var(--tc), transparent 55%); }
+  .team.blue { border-radius: var(--radius) 0 0 var(--radius); }
+  .team.red { border-radius: 0 var(--radius) var(--radius) 0; }
+  .team > * { position: relative; }
+  .t-logo { width: 52px; height: 52px; font-size: 40px; flex: none; }
+  .t-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .red .t-info { align-items: flex-end; }
+  .t-name { font-size: 26px; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .pips { display: flex; gap: 5px; height: 9px; }
+  .pip { width: 22px; height: 9px; background: rgba(255,255,255,.18); transform: skewX(-20deg); }
+  .pip.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .stats { display: flex; align-items: center; gap: 14px; font-size: 22px; }
+  .stat { display: flex; align-items: center; gap: 5px; color: var(--text); }
+  .stat svg { width: 18px; height: 18px; fill: var(--muted); }
+  .drakes { display: flex; gap: 4px; min-width: 0; }
+  .drake { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); }
+  .kills { font-size: 56px; font-weight: 800; width: 76px; text-align: center; line-height: 1; }
+  .center { background: rgba(var(--panel-rgb), 1); display: flex; flex-direction: column; align-items: center; justify-content: center; border-bottom: 4px solid var(--accent); }
+  .time { font-size: 38px; font-weight: 700; line-height: 1; letter-spacing: .04em; }
+  .diff { font-size: 17px; margin-top: 3px; color: var(--muted); height: 18px; }
+  .sub { margin: 8px auto 0; width: max-content; padding: 3px 20px; font-size: 16px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    background: rgba(var(--panel-rgb), var(--opacity)); border-radius: 0 0 var(--radius) var(--radius); }
+</style>
+</head>
+<body>
+<div class="blk" data-block="bar" data-origin="960px 18px">
+  <div id="root" class="fade-root">
+    <div class="bar" id="bar"></div>
+    <div class="sub" id="sub" data-comp="subline"></div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+  const ICON_GOLD = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" fill="rgba(0,0,0,.35)"/></svg>';
+  const ICON_TOWER = '<svg viewBox="0 0 24 24"><path d="M5 3h3v3h2V3h4v3h2V3h3v7l-2 2v9H7v-9l-2-2z"/></svg>';
+  const bar = document.getElementById('bar');
+  const mk = (side) => `
+    <div class="team banner ${side}" id="${side}">
+      <div class="t-logo" id="${side}-logo" data-comp="logo"></div>
+      <div class="t-info"><div class="t-name" id="${side}-name" data-comp="name"></div><div class="pips" id="${side}-pips" data-comp="pips"></div></div>
+      <div class="stats">
+        <div class="stat" data-comp="gold">${ICON_GOLD}<span class="num" id="${side}-gold">–</span></div>
+        <div class="stat" data-comp="towers">${ICON_TOWER}<span class="num" id="${side}-towers">–</span></div>
+        <div class="drakes" id="${side}-drakes" data-comp="drakes"></div>
+      </div>
+      <div class="kills num" id="${side}-kills">–</div>
+    </div>`;
+  bar.innerHTML = mk('blue') + '<div class="center"><div class="time num" id="time">0:00</div><div class="diff" id="diff" data-comp="diff"></div></div>' + mk('red');
+  const $ = (id) => document.getElementById(id);
+
+  Overlay.onState((s) => {
+    const g = s.game;
+    const need = Math.ceil(s.match.bestOf / 2);
+    for (const side of ['blue', 'red']) {
+      const team = Overlay.team(side);
+      $(side).style.setProperty('--tc', team.color);
+      Overlay.teamBanner($(side), team);
+      Overlay.html($(side + '-logo'), Overlay.logoHTML(team));
+      Overlay.text($(side + '-name'), team.name);
+      const wins = side === 'blue' ? s.match.blueWins : s.match.redWins;
+      Overlay.html($(side + '-pips'), Array.from({ length: need }, (_, i) => `<div class="pip ${i < wins ? 'on' : ''}"></div>`).join(''));
+      const d = g?.[side];
+      Overlay.text($(side + '-kills'), d ? d.kills : '–');
+      Overlay.text($(side + '-gold'), d ? Overlay.fmtGold(d.gold) : '–');
+      Overlay.text($(side + '-towers'), d ? d.towers : '–');
+      Overlay.html($(side + '-drakes'), d ? d.dragons.map((t) => `<span class="drake" title="${t}" style="background:${Overlay.DRAGON_COLORS[t] || '#fff'}"></span>`).join('') : '');
+    }
+    Overlay.text($('time'), g ? Overlay.fmtTime(g.time) : '--:--');
+    const diff = g ? g.blue.gold - g.red.gold : 0;
+    const el = $('diff');
+    Overlay.text(el, g && Math.abs(diff) >= 100 ? (diff > 0 ? '◀ ' : '') + '+' + Overlay.fmtGold(Math.abs(diff)) + (diff < 0 ? ' ▶' : '') : '');
+    el.style.color = diff > 0 ? Overlay.team('blue').color : Overlay.team('red').color;
+    Overlay.text($('sub'), `${s.match.tournament || ''}${s.match.tournament ? ' · ' : ''}Manche ${s.match.game} · BO${s.match.bestOf}`);
+  });
+</script>
+</body>
+</html>

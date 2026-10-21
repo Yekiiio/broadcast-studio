@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr" data-overlay="objectives">
+<head>
+<meta charset="utf-8"><title>Objectifs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #timers { position: absolute; top: 132px; left: 50%; margin-left: -150px; width: 300px; display: flex; gap: 8px; transform: translateY(-30px); }
+  .pill { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; font-size: 20px;
+    background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); border-bottom: 3px solid var(--c); }
+  .pill b { font-size: 15px; letter-spacing: .1em; color: var(--muted); font-weight: 700; }
+  .pill.up { border-bottom-color: #4ade80; } .pill.up span { color: #4ade80; }
+  #graph { position: absolute; left: 20px; top: 500px; width: 330px; padding: 10px 12px 8px; transform: translateX(-60px); }
+  #graph h4 { margin: 0 0 6px; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; }
+  svg { width: 100%; height: 130px; display: block; }
+  #inhibs { position: absolute; top: 180px; left: 50%; margin-left: -200px; width: 400px; display: flex; justify-content: space-between; gap: 12px; transform: translateY(-30px); }
+  .ih { display: flex; flex-direction: column; gap: 4px; min-width: 120px; } .ih.red { align-items: flex-end; }
+  .chip { --tc: #888; display: flex; gap: 8px; align-items: center; padding: 3px 10px; font-size: 17px; background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); border-left: 3px solid var(--tc); }
+  .ih.red .chip { flex-direction: row-reverse; border-left: 0; border-right: 3px solid var(--tc); }
+  .chip b { color: var(--muted); font-size: 14px; letter-spacing: .08em; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="timers" data-origin="960px 132px">
+  <div id="timers" class="fade-root">
+    <div class="pill" id="dragon" data-comp="dragon" style="--c:#f0662b"><b>DRAGON</b><span class="num">–</span></div>
+    <div class="pill" id="baron" data-comp="baron" style="--c:#c084fc"><b>BARON</b><span class="num">–</span></div>
+  </div>
+</div>
+<div class="blk" data-block="inhibs" data-origin="960px 180px">
+  <div id="inhibs" class="fade-root"><div class="ih blue" id="ih-blue"></div><div class="ih red" id="ih-red"></div></div>
+</div>
+<div class="blk" data-block="graph" data-origin="20px 500px">
+  <div id="graph" class="panel banner fade-root">
+    <h4><span>Écart d'or</span><span id="gd" class="num"></span></h4>
+    <svg id="svg" viewBox="0 0 306 130" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  function drawGraph(hist, blue, red) {
+    if (!hist || hist.length < 2) return '<line x1="0" y1="65" x2="306" y2="65" stroke="rgba(255,255,255,.2)" stroke-dasharray="4 4"/>';
+    const W = 306, H = 130, mid = H / 2;
+    const maxT = Math.max(60, hist[hist.length - 1].t);
+    const maxD = Math.max(1500, ...hist.map((h) => Math.abs(h.d))) * 1.1;
+    const X = (t) => (t / maxT) * W, Y = (d) => mid - (d / maxD) * (mid - 4);
+    const pts = hist.map((h) => `${X(h.t).toFixed(1)},${Y(h.d).toFixed(1)}`);
+    const area = `M0,${mid} L${pts.join(' L')} L${X(hist[hist.length - 1].t).toFixed(1)},${mid} Z`;
+    return `<defs><clipPath id="up"><rect x="0" y="0" width="${W}" height="${mid}"/></clipPath><clipPath id="dn"><rect x="0" y="${mid}" width="${W}" height="${mid}"/></clipPath></defs>
+      <path d="${area}" fill="${blue}" fill-opacity=".55" clip-path="url(#up)"/><path d="${area}" fill="${red}" fill-opacity=".55" clip-path="url(#dn)"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="0" y1="${mid}" x2="${W}" y2="${mid}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>`;
+  }
+  Overlay.onState((s) => {
+    const g = s.game;
+    for (const k of ['dragon', 'baron']) {
+      const el = $(k), o = g?.objectives?.[k];
+      el.classList.toggle('up', !!o?.alive);
+      Overlay.text(el.querySelector('span'), !o ? '–' : o.alive ? 'EN JEU' : Overlay.fmtTime(o.spawnIn));
+    }
+    const blue = Overlay.team('blue').color, red = Overlay.team('red').color;
+    Overlay.html($('svg'), drawGraph(g?.goldHistory, blue, red));
+    const d = g ? g.blue.gold - g.red.gold : 0;
+    Overlay.text($('gd'), g ? (d >= 0 ? '+' : '−') + Overlay.fmtGold(Math.abs(d)) : '');
+    $('gd').style.color = d >= 0 ? blue : red;
+    for (const side of ['blue', 'red']) {
+      const list = (g?.inhibs || []).filter((x) => x.side === side);
+      const color = side === 'blue' ? blue : red;
+      Overlay.html($('ih-' + side), list.map((x) => `<div class="chip" style="--tc:${color}"><b>INHIB ${x.lane}</b><span class="num">${Overlay.fmtTime(x.respawnIn)}</span></div>`).join(''));
+    }
+  });
+</script>
+</body>
+</html>

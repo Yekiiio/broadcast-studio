@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr" data-overlay="killfeed">
+<head>
+<meta charset="utf-8"><title>Kill feed</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #feed { position: absolute; right: 30px; top: 680px; width: 420px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .k { --tc: #888; display: flex; align-items: center; gap: 10px; padding: 5px 12px 5px 6px; font-size: 20px; border-right: 4px solid var(--tc);
+    background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); animation: in .35s ease-out; transition: opacity .6s, transform .6s; }
+  .k.out { opacity: 0; transform: translateX(40px); }
+  @keyframes in { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: none; } }
+  .k i.c { width: 40px; height: 40px; display: block; background: var(--bg) center/cover; border-radius: 6px; flex: none; }
+  .k i.c.v { filter: grayscale(.7); border: 2px solid var(--vc, #888); }
+  .k i.c.a { width: 24px; height: 24px; opacity: .85; }
+  .k .nm { max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .k .sw { color: var(--accent); font-size: 22px; line-height: 1; }
+  .as { display: flex; gap: 3px; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="feed" data-origin="1890px 680px"><div id="feed"></div></div>
+<script src="shared.js"></script>
+<script>
+  const feed = document.getElementById('feed');
+  const seen = new Set();
+  let init = false, lastT = -1;
+  const sideColor = (side) => (side ? Overlay.team(side).color : '#888');
+
+  function addRow(f) {
+    const a = (f.assists || []).slice(0, 4).map((c) => `<i class="c a" data-comp="assists" style="background-image:url('${Overlay.square(c)}')"></i>`).join('');
+    const el = document.createElement('div');
+    el.className = 'k banner';
+    el.style.setProperty('--tc', sideColor(f.side));
+    el.style.setProperty('--vc', sideColor(f.victimSide));
+    el.innerHTML = `<span class="nm" data-comp="names">${Overlay.esc(f.killer || '')}</span>
+      <i class="c" style="background-image:url('${Overlay.square(f.killerChamp)}')"></i>
+      ${a ? `<span class="as">${a}</span>` : ''}
+      <span class="sw">⚔</span>
+      <i class="c v" style="background-image:url('${Overlay.square(f.victimChamp)}')"></i>
+      <span class="nm" data-comp="names">${Overlay.esc(f.victim || '')}</span>`;
+    feed.appendChild(el);
+    while (feed.children.length > 6) feed.firstChild.remove();
+    setTimeout(() => el.classList.add('out'), 8500);
+    setTimeout(() => el.remove(), 9200);
+  }
+
+  Overlay.onState((s) => {
+    const g = s.game;
+    if (!g) return;
+    if (g.time < lastT - 3) { seen.clear(); feed.innerHTML = ''; init = true; }
+    lastT = g.time;
+    const kills = g.feed.filter((f) => f.kind === 'kill');
+    if (!init) { kills.forEach((f) => seen.add(f.id)); init = true; return; }
+    for (const f of kills) if (!seen.has(f.id)) { seen.add(f.id); addRow(f); }
+  });
+</script>
+</body>
+</html>

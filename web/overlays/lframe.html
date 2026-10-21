@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr" data-overlay="lframe">
+<head>
+<meta charset="utf-8"><title>Cadre L</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Cadre en L : un panneau à gauche et une barre en bas ; la zone de jeu reste transparente (haut-droite). */
+  #left { position: absolute; left: 0; top: 0; width: var(--lw, 380px); height: calc(1080px - var(--bh, 150px)); padding: 28px 24px; display: flex; flex-direction: column; gap: 22px;
+    background: rgba(var(--panel-rgb), 1); border-right: 4px solid var(--accent); transform: translateX(-100%); }
+  #bottom { position: absolute; left: 0; bottom: 0; width: 1920px; height: var(--bh, 150px); display: grid; grid-template-columns: var(--lw, 380px) 1fr 460px; align-items: stretch;
+    background: rgba(var(--panel-rgb), 1); border-top: 4px solid var(--accent); transform: translateY(100%); }
+  .tour { font-size: 24px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); text-align: center; line-height: 1.2; }
+  .ser { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ser .t { --tc: #888; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 120px; text-align: center; }
+  .ser .lg { width: 96px; height: 96px; font-size: 66px; } .ser .nm { font-size: 24px; font-weight: 700; text-transform: uppercase; line-height: 1; border-bottom: 4px solid var(--tc); padding-bottom: 4px; }
+  .ser .sc { font-size: 64px; font-weight: 800; white-space: nowrap; }
+  .meta { text-align: center; color: var(--muted); letter-spacing: .18em; font-size: 18px; text-transform: uppercase; }
+  .sponsor { flex: 1; min-height: 0; display: grid; place-items: center; } .sponsor img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .b-left { display: grid; place-items: center; padding: 10px 24px; border-right: 1px solid rgba(255,255,255,.12); }
+  .b-left .nm2 { font-size: 30px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-align: center; line-height: 1.1; }
+  .ticker { overflow: hidden; display: flex; align-items: center; position: relative; }
+  .ticker span { display: inline-block; white-space: nowrap; font-size: 36px; padding-left: 100%; animation: scroll 24s linear infinite; }
+  @keyframes scroll { to { transform: translateX(-100%); } }
+  .casters { display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0 28px; border-left: 1px solid rgba(255,255,255,.12); }
+  .casters small { letter-spacing: .24em; color: var(--accent); font-size: 14px; text-transform: uppercase; }
+  .casters b { font-size: 30px; line-height: 1; }
+  body.show #left, body.show #bottom { transform: none; }
+  #left, #bottom { transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+</style>
+</head>
+<body>
+<div class="blk" data-block="left" data-origin="0px 0px">
+  <div id="left" class="banner">
+    <div class="tour" id="tour"></div>
+    <div data-comp="series"><div class="ser">
+      <div class="t" id="tb"><div class="lg" id="tb-lg"></div><div class="nm" id="tb-nm"></div></div>
+      <div class="sc num" id="sc"></div>
+      <div class="t" id="tr"><div class="lg" id="tr-lg"></div><div class="nm" id="tr-nm"></div></div>
+    </div><div class="meta" id="meta" style="margin-top:14px"></div></div>
+    <div class="sponsor" data-comp="sponsor" id="sponsor"></div>
+  </div>
+</div>
+<div class="blk" data-block="bottom" data-origin="0px 1080px">
+  <div id="bottom" class="banner">
+    <div class="b-left"><div class="nm2" id="b-title"></div></div>
+    <div class="ticker" data-comp="ticker"><span id="tick"></span></div>
+    <div class="casters" data-comp="casters"><small>Commentateurs</small><b id="c1"></b><b id="c2"></b></div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  Overlay.onState((s) => {
+    const L = s.settings.lframe, m = s.match;
+    document.documentElement.style.setProperty('--lw', L.leftWidth + 'px');
+    document.documentElement.style.setProperty('--bh', L.bottomHeight + 'px');
+    if (L.background) document.documentElement.style.setProperty('--banner-img', `url("${L.background}")`);
+    for (const [side, k] of [['blue', 'tb'], ['red', 'tr']]) {
+      const t = Overlay.team(side);
+      $(k).style.setProperty('--tc', t.color);
+      Overlay.html($(k + '-lg'), Overlay.logoHTML(t));
+      Overlay.text($(k + '-nm'), t.tag || t.name);
+    }
+    Overlay.text($('sc'), `${m.blueWins} - ${m.redWins}`);
+    Overlay.text($('tour'), m.tournament || '');
+    Overlay.text($('meta'), `${m.round ? m.round + ' · ' : ''}BO${m.bestOf} · Manche ${m.game}`);
+    Overlay.html($('sponsor'), L.sponsor ? `<img src="${Overlay.esc(L.sponsor)}" alt="">` : '');
+    Overlay.text($('b-title'), m.round || 'En direct');
+    Overlay.text($('tick'), L.ticker || '');
+    Overlay.text($('c1'), L.caster1 || '');
+    Overlay.text($('c2'), L.caster2 || '');
+    $('c1').style.display = L.caster1 ? '' : 'none';
+    $('c2').style.display = L.caster2 ? '' : 'none';
+  });
+</script>
+</body>
+</html>

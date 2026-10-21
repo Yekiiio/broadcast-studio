@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr" data-overlay="bracket">
+<head>
+<meta charset="utf-8"><title>Bracket</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  #root { position: absolute; left: 80px; right: 80px; top: 70px; bottom: 70px; transform: scale(.96); display: flex; flex-direction: column; }
+  .wrap { flex: 1; padding: 28px 36px; display: flex; flex-direction: column; border-top: 5px solid var(--accent); min-height: 0; }
+  h1 { margin: 0 0 22px; text-align: center; font-size: 46px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+  .cols { flex: 1; display: flex; gap: 34px; min-height: 0; }
+  .col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .col h2 { margin: 0 0 12px; text-align: center; font-size: 22px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .list { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 12px; }
+  .m { background: rgba(255,255,255,.06); border-radius: var(--radius); overflow: hidden; border: 2px solid transparent; }
+  .m.live { border-color: var(--accent); box-shadow: 0 0 18px rgba(255,255,255,.12); }
+  .t { --tc: #888; display: flex; align-items: center; gap: 12px; padding: 7px 14px 7px 8px; border-left: 5px solid var(--tc); font-size: 26px; }
+  .t + .t { border-top: 1px solid rgba(255,255,255,.1); }
+  .t .lg { width: 40px; height: 40px; font-size: 28px; flex: none; } .t .n { flex: 1; text-transform: uppercase; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t .w { font-size: 32px; font-weight: 800; min-width: 28px; text-align: right; } .t.lose { opacity: .45; } .t.win .w { color: var(--accent); }
+  .empty { margin: auto; color: var(--muted); font-size: 28px; letter-spacing: .1em; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="bracket" data-origin="960px 540px">
+  <div id="root" class="fade-root"><div class="wrap panel banner"><h1 id="title" data-comp="title"></h1><div class="cols" id="cols"></div></div></div>
+</div>
+<script src="shared.js"></script>
+<script>
+  Overlay.onState((s) => {
+    Overlay.text(document.getElementById('title'), s.match.tournament || 'Programme');
+    const list = Overlay.schedule();
+    const rounds = [];
+    for (const e of list) {
+      const key = e.round || 'Match';
+      let r = rounds.find((x) => x.name === key);
+      if (!r) { r = { name: key, items: [] }; rounds.push(r); }
+      r.items.push(e);
+    }
+    const html = rounds.map((r) => `<div class="col"><h2>${Overlay.esc(r.name)}</h2><div class="list">${r.items.map((e) => {
+      const need = Math.ceil(e.bestOf / 2);
+      const b = Overlay.teamById(e.blueTeamId), rd = Overlay.teamById(e.redTeamId);
+      const done = e.blueWins >= need || e.redWins >= need;
+      const line = (t, w, other) => `<div class="t ${done ? (w > other ? 'win' : 'lose') : ''}" style="--tc:${Overlay.esc(t.color)}"><div class="lg">${Overlay.logoHTML(t)}</div><div class="n">${Overlay.esc(t.name)}</div><div class="w num">${w}</div></div>`;
+      return `<div class="m ${e.id === s.match.id ? 'live' : ''}">${line(b, e.blueWins, e.redWins)}${line(rd, e.redWins, e.blueWins)}</div>`;
+    }).join('')}</div></div>`).join('');
+    Overlay.html(document.getElementById('cols'), html || '<div class="empty">Aucun match programmé</div>');
+  });
+</script>
+</body>
+</html>

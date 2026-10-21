@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr" data-overlay="players">
+<head>
+<meta charset="utf-8"><title>Joueurs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;700&family=Inter:wght@500;700&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .col { position: absolute; top: 160px; width: 380px; display: flex; flex-direction: column; gap: 6px; transition: opacity .55s, transform .55s; opacity: 0; }
+  #blue { left: 20px; transform: translateX(-60px); } #red { right: 20px; transform: translateX(60px); }
+  body.show .col, body.show #blue, body.show #red { opacity: 1; transform: none; }
+  .row { --tc: #888; padding: 6px 12px 6px 6px; position: relative; overflow: hidden;
+    background: rgba(var(--panel-rgb), var(--opacity)); border-radius: var(--radius); border-left: 4px solid var(--tc); }
+  #red .row { border-left: 0; border-right: 4px solid var(--tc); padding: 6px 6px 6px 12px; }
+  .top { display: flex; align-items: center; gap: 8px; height: 56px; }
+  #red .top { flex-direction: row-reverse; }
+  .ic { width: 52px; height: 52px; flex: none; position: relative; }
+  .ic.dead { filter: grayscale(1) brightness(.5); }
+  .lvl { position: absolute; right: -2px; bottom: -2px; font-size: 13px; background: var(--bg); padding: 0 4px; border-radius: 4px; line-height: 15px; }
+  .sp { display: flex; flex-direction: column; gap: 3px; flex: none; }
+  .sp i { width: 24px; height: 24px; display: block; background: var(--bg) center/cover; border-radius: 4px; }
+  .rn { width: 26px; height: 26px; flex: none; background: center/contain no-repeat; }
+  .info { flex: 1; min-width: 0; }
+  #red .info { text-align: right; }
+  .nm { font-size: 20px; font-weight: 700; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kda { font-size: 17px; color: var(--muted); line-height: 1.1; white-space: nowrap; }
+  .kda b { color: var(--accent); font-weight: 700; margin: 0 0 0 8px; font-size: 14px; }
+  .gd { font-size: 20px; text-align: right; line-height: 1.1; min-width: 52px; }
+  #red .gd { text-align: left; }
+  .gd small { display: block; font-size: 14px; color: var(--muted); }
+  .items { display: flex; gap: 3px; margin-top: 5px; height: 28px; }
+  #red .items { flex-direction: row-reverse; }
+  .items i { width: 28px; height: 28px; background: rgba(0,0,0,.35) center/cover; border-radius: 4px; display: block; }
+</style>
+</head>
+<body>
+<div class="blk" data-block="blue" data-origin="20px 160px"><div class="col" id="blue"></div></div>
+<div class="blk" data-block="red" data-origin="1900px 160px"><div class="col" id="red"></div></div>
+<script src="shared.js"></script>
+<script>
+  const rows = {};
+  for (const side of ['blue', 'red']) {
+    rows[side] = [];
+    for (let i = 0; i < 5; i++) {
+      const r = document.createElement('div');
+      r.className = 'row banner';
+      r.innerHTML = `<div class="top">
+        <div class="ic champ-img"><span class="lvl num"></span></div>
+        <div class="sp" data-comp="spells"><i></i><i></i></div>
+        <div class="rn" data-comp="rune"></div>
+        <div class="info"><div class="nm"></div><div class="kda num"><span data-comp="kda"></span><b data-comp="kp"></b></div></div>
+        <div class="gd num"><span data-comp="gold"></span><small data-comp="cs"></small></div></div>
+        <div class="items" data-comp="items"></div>`;
+      document.getElementById(side).appendChild(r);
+      const q = (s) => r.querySelector(s);
+      rows[side].push({ r, ic: q('.ic'), lvl: q('.lvl'), sp: r.querySelectorAll('.sp i'), rn: q('.rn'), nm: q('.nm'), kda: q('.kda span'), kp: q('.kda b'), gd: q('.gd span'), cs: q('.gd small'), items: q('.items') });
+    }
+  }
+  Overlay.onState((s) => {
+    for (const side of ['blue', 'red']) {
+      const team = Overlay.team(side);
+      rows[side].forEach((o, i) => {
+        const p = s.game?.[side]?.players?.[i];
+        o.r.style.display = p ? '' : 'none';
+        o.r.style.setProperty('--tc', team.color);
+        Overlay.teamBanner(o.r, team);
+        if (!p) return;
+        Overlay.bg(o.ic, Overlay.square(p.champion));
+        o.ic.classList.toggle('dead', p.dead);
+        Overlay.text(o.lvl, p.level);
+        Overlay.text(o.nm, team.players[i] && team.players[i].trim() ? team.players[i] : p.name);
+        Overlay.text(o.kda, `${p.kills} / ${p.deaths} / ${p.assists}`);
+        Overlay.text(o.kp, `KP ${p.kp}%`);
+        Overlay.text(o.gd, Overlay.fmtGold(p.gold));
+        Overlay.text(o.cs, p.cs + ' CS');
+        o.sp.forEach((el, k) => Overlay.bg(el, Overlay.spell(p.spells?.[k])));
+        Overlay.bg(o.rn, p.rune ? Overlay.rune(p.rune.id) : '');
+        Overlay.html(o.items, (p.items || []).slice(0, 7).map((it) => `<i style="background-image:url('${Overlay.item(it.id)}')"></i>`).join(''));
+      });
+    }
+  });
+</script>
+</body>
+</html>
