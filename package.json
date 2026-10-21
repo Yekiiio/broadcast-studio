@@ -1,0 +1,49 @@
+{
+  "name": "broadcast-studio",
+  "version": "1.1.0",
+  "description": "Overlays de broadcast gratuits pour League of Legends (scoreboard, champ select, séries, thèmes)",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "server": "node src/headless.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.broadcaststudio.app",
+    "productName": "Broadcast Studio",
+    "files": [
+      "main.js",
+      "src/**",
+      "web/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "artifactName": "BroadcastStudio-${version}-portable.exe"
+  },
+  "author": "Broadcast Studio"
+}
